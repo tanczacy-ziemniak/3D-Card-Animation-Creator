@@ -22,7 +22,7 @@ A web application that allows users to create and record custom 3D card animatio
 
 1. Clone the repository or download all the files from the repository:
    ```
-   git clone https://github.com/yourusername/3d-card-animation-creator.git
+   https://github.com/ziemniak-kr/3D-Card-Animation-Creator.git
    ```
 
 2. Navigate to the project directory:
