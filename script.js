@@ -4,8 +4,19 @@ let frontTexture, backTexture;
 let isAnimating = false;
 let recorder;
 let startTime;
-let animationDuration = 2000; // 2 seconds
+let animationDuration = 2000; // spin duration (2 seconds)
+const holdDuration = 3000; // hold for 5 seconds
 let downloadUrl;
+let originalSize = { width: 0, height: 0 };
+let isRecording = false;
+
+// Quality settings
+const qualitySettings = {
+    '720p': { width: 1280, height: 720 },
+    '1080p': { width: 1920, height: 1080 },
+    '1440p': { width: 2560, height: 1440 },
+    '4K': { width: 3840, height: 2160 }
+};
 
 // DOM elements
 const frontImageInput = document.getElementById('frontImage');
@@ -17,6 +28,7 @@ const recordBtn = document.getElementById('recordBtn');
 const downloadBtn = document.getElementById('downloadBtn');
 const statusMessage = document.getElementById('status');
 const canvasContainer = document.getElementById('canvas-container');
+const videoQualitySelector = document.getElementById('videoQuality');
 
 // Initialize the 3D scene
 function initScene() {
@@ -34,8 +46,9 @@ function initScene() {
     camera.position.z = 5;
 
     // Create renderer
-    renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
     renderer.setSize(canvasContainer.clientWidth, canvasContainer.clientHeight);
+    originalSize = { width: canvasContainer.clientWidth, height: canvasContainer.clientHeight };
     canvasContainer.appendChild(renderer.domElement);
 
     // Add lighting
@@ -48,11 +61,14 @@ function initScene() {
 
     // Handle window resize
     window.addEventListener('resize', () => {
-        const width = canvasContainer.clientWidth;
-        const height = canvasContainer.clientHeight;
-        renderer.setSize(width, height);
-        camera.aspect = width / height;
-        camera.updateProjectionMatrix();
+        if (!isRecording) {
+            const width = canvasContainer.clientWidth;
+            const height = canvasContainer.clientHeight;
+            renderer.setSize(width, height);
+            originalSize = { width, height };
+            camera.aspect = width / height;
+            camera.updateProjectionMatrix();
+        }
     });
 }
 
@@ -193,11 +209,16 @@ function animate() {
     
     const elapsedTime = Date.now() - startTime;
     
-    if (elapsedTime < animationDuration) {
-        // Rotate card 360 degrees (2π radians) over animationDuration
-        card.rotation.y = (elapsedTime / animationDuration) * 2 * Math.PI;
+    if (elapsedTime < holdDuration) {
+        // Hold: keep card static
+        card.rotation.y = 0;
+    } else if (elapsedTime < holdDuration + animationDuration) {
+        // Spin: rotate card over animationDuration
+        const spinTime = elapsedTime - holdDuration;
+        card.rotation.y = (spinTime / animationDuration) * 2 * Math.PI;
     } else {
-        // Animation complete
+        // Animation complete: set final rotation and stop animating
+        card.rotation.y = 2 * Math.PI;
         isAnimating = false;
         
         if (recorder) {
@@ -205,6 +226,12 @@ function animate() {
             recorder.stopRecording(function() {
                 const blob = recorder.getBlob();
                 downloadUrl = URL.createObjectURL(blob);
+                
+                // Restore original renderer size
+                renderer.setSize(originalSize.width, originalSize.height);
+                camera.aspect = originalSize.width / originalSize.height;
+                camera.updateProjectionMatrix();
+                isRecording = false;
                 
                 // Enable download button
                 downloadBtn.classList.remove('hidden');
@@ -227,6 +254,13 @@ function startPreview() {
     
     resetCardRotation();
     isAnimating = true;
+    isRecording = false;
+    
+    // Ensure renderer is at display size
+    renderer.setSize(originalSize.width, originalSize.height);
+    camera.aspect = originalSize.width / originalSize.height;
+    camera.updateProjectionMatrix();
+    
     startTime = Date.now();
     statusMessage.textContent = 'Previewing animation...';
     statusMessage.style.color = 'blue';
@@ -252,15 +286,33 @@ function startRecording() {
     resetCardRotation();
     
     try {
+        // Set high-resolution for recording
+        const selectedQuality = videoQualitySelector.value;
+        const quality = qualitySettings[selectedQuality];
+        
+        isRecording = true;
+        
+        // Save original size before changing
+        originalSize = { 
+            width: renderer.domElement.width, 
+            height: renderer.domElement.height 
+        };
+        
+        // Set renderer to recording quality
+        renderer.setSize(quality.width, quality.height);
+        camera.aspect = quality.width / quality.height;
+        camera.updateProjectionMatrix();
+        
         // Get stream from canvas
         const stream = renderer.domElement.captureStream(30); // 30fps
         
-        // Create recorder
+        // Create recorder with high quality settings
         recorder = new RecordRTC(stream, {
             type: 'video',
             mimeType: 'video/webm',
             frameRate: 30,
             quality: 100,
+            videoBitsPerSecond: 8000000, // 8 Mbps for high quality
         });
         
         // Start recording
@@ -268,7 +320,7 @@ function startRecording() {
         
         isAnimating = true;
         startTime = Date.now();
-        statusMessage.textContent = 'Recording animation...';
+        statusMessage.textContent = `Recording animation at ${selectedQuality}...`;
         statusMessage.style.color = 'blue';
         
         animate();
@@ -276,6 +328,14 @@ function startRecording() {
         console.error('Recording error:', error);
         statusMessage.textContent = 'Error starting recording: ' + error.message;
         statusMessage.style.color = 'red';
+        
+        // Restore original size if error occurs
+        if (isRecording) {
+            renderer.setSize(originalSize.width, originalSize.height);
+            camera.aspect = originalSize.width / originalSize.height;
+            camera.updateProjectionMatrix();
+            isRecording = false;
+        }
     }
 }
 
@@ -287,9 +347,10 @@ function downloadVideo() {
         return;
     }
     
+    const selectedQuality = videoQualitySelector.value;
     const a = document.createElement('a');
     a.href = downloadUrl;
-    a.download = 'card-animation.webm';
+    a.download = `card-animation-${selectedQuality}.webm`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
