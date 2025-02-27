@@ -1,0 +1,47 @@
+// filepath: index.html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Card Animation</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Three.js Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- RecordRTC Library -->
+    <script src="https://cdn.webrtc-experiment.com/RecordRTC.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>3D Card Animation Creator</h1>
+        
+        <div class="upload-section">
+            <div class="upload-box">
+                <h3>Front Image</h3>
+                <input type="file" id="frontImage" accept="image/*">
+                <div class="preview" id="frontPreview"></div>
+            </div>
+            
+            <div class="upload-box">
+                <h3>Back Image</h3>
+                <input type="file" id="backImage" accept="image/*">
+                <div class="preview" id="backPreview"></div>
+            </div>
+        </div>
+        
+        <div class="controls">
+            <button id="previewBtn" disabled>Preview Animation</button>
+            <button id="recordBtn" disabled>Record Animation</button>
+            <button id="downloadBtn" class="hidden">Download Video</button>
+        </div>
+        
+        <div class="status-message" id="status"></div>
+        
+        <div class="renderer-container">
+            <div id="canvas-container"></div>
+        </div>
+    </div>
+    
+    <script src="script.js"></script>
+</body>
+</html>
