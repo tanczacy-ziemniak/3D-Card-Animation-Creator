@@ -4,7 +4,7 @@ A web application that allows users to create and record custom 3D card animatio
 
 ## Demo
 
-![Alt Text](https://media.giphy.com/media/vFKqnCdLPNOKc/giphy.gif)
+![Alt Text](https://github.com/ziemniak-kr/3D-Card-Animation-Creator/blob/main/demo/card-animation-720p.gif)
 
 ## Features
 
