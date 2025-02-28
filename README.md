@@ -2,6 +2,10 @@
 
 A web application that allows users to create and record custom 3D card animations by uploading front and back images.
 
+## Demo
+
+![Alt Text](https://media.giphy.com/media/vFKqnCdLPNOKc/giphy.gif)
+
 ## Features
 
 - Upload custom images for the front and back of the card
